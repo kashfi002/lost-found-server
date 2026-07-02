@@ -14,13 +14,16 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-app.get("/test", (req, res) => {
-  res.send("Test route works");
-});
+
 async function run() {
   try {
    
     await client.connect();
+    console.log("MongoDB connected");
+
+app.get("/hello", (req, res) => {
+  res.send("Hello after MongoDB");
+});
    const db = client.db("lostFoundDB");
     const itemsCollection = db.collection("items");
 
