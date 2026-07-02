@@ -14,7 +14,9 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-
+app.get("/test", (req, res) => {
+  res.send("Test route works");
+});
 async function run() {
   try {
    
