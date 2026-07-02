@@ -16,59 +16,28 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
+ async function run() {
   try {
-   
+    console.log("Starting MongoDB connection...");
+
     await client.connect();
-    console.log("MongoDB connected");
 
-app.get("/hello", (req, res) => {
-  res.send("Hello after MongoDB");
-});
-   const db = client.db("lostFoundDB");
+    console.log("MongoDB connected!");
+
+    const db = client.db("lostFoundDB");
     const itemsCollection = db.collection("items");
+    const reviewsCollection = db.collection("reviews");
 
-    app.post('/items', async (req, res) => {
-        const item = req.body;
-        const result = await itemsCollection.insertOne(item);
-        res.send(result);
+    app.get("/hello", (req, res) => {
+      res.send("Hello after MongoDB");
     });
 
-    app.get('/items', async (req, res) => {
-  try {
-    const items = await itemsCollection.find({}).toArray();
-    res.json(items);
+    // your other routes...
+
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch items' });
+    console.error("MongoDB Error:", err);
   }
-})
-;
-const reviewsCollection = db.collection("reviews");
-
-app.post('/reviews', async (req, res) => {
-  try {
-    const review = { ...req.body, createdAt: new Date() }
-    const result = await reviewsCollection.insertOne(review)
-    res.json(result)
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to save review' })
-  }
-})
-
-app.get('/reviews', async (req, res) => {
-  try {
-    const reviews = await reviewsCollection.find({}).sort({ createdAt: -1 }).toArray()
-    res.json(reviews)
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch reviews' })
-  }
-})
-
-
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-   
-  }
+}
 }
 run().catch(console.dir);
 
