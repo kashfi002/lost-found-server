@@ -15,7 +15,7 @@ const client = new MongoClient(uri, {
   }
 });
 
-async function run() {
+
  async function run() {
   try {
     console.log("Starting MongoDB connection...");
@@ -37,7 +37,6 @@ async function run() {
   } catch (err) {
     console.error("MongoDB Error:", err);
   }
-}
 }
 run().catch(console.dir);
 
