@@ -66,6 +66,7 @@ async function getCollections() {
     itemsCollection: db.collection('items'),
     reviewsCollection: db.collection('reviews'),
     claimsCollection: db.collection('claims'),
+     donationsCollection: db.collection('donations'),
   };
 }
 async function getUsersCollection() {
@@ -143,6 +144,50 @@ app.post('/api/emergency-alert', async (req, res) => {
   } catch (err) {
     console.error('POST /api/emergency-alert error:', err);
     res.status(500).json({ error: 'Failed to save/send emergency alert' });
+  }
+});
+// ==================== Donation Route (manual bKash verification) ====================
+app.post('/api/donations', async (req, res) => {
+  try {
+    const { itemId, trxId, amount, name } = req.body;
+
+    if (!trxId || trxId.trim().length < 5) {
+      return res.status(400).json({ error: 'Please enter a valid Transaction ID' });
+    }
+
+    const { donationsCollection } = await getCollections();
+
+    // Prevent the exact same TrxID being submitted twice
+    const existing = await donationsCollection.findOne({ trxId: trxId.trim() });
+    if (existing) {
+      return res.status(409).json({ error: 'This Transaction ID has already been submitted' });
+    }
+
+    await donationsCollection.insertOne({
+      itemId: itemId || null,
+      trxId: trxId.trim(),
+      amount: amount || null,
+      name: name || 'Anonymous',
+      verified: false, // you'll flip this manually after checking your bKash statement
+      createdAt: new Date(),
+    });
+
+    res.status(201).json({ success: true });
+  } catch (err) {
+    console.error('POST /api/donations error:', err);
+    res.status(500).json({ error: 'Failed to save donation record' });
+  }
+});
+
+// Optional: an admin-only route to view/verify donations later
+app.get('/api/donations', async (req, res) => {
+  try {
+    const { donationsCollection } = await getCollections();
+    const donations = await donationsCollection.find({}).sort({ createdAt: -1 }).toArray();
+    res.json(donations);
+  } catch (err) {
+    console.error('GET /api/donations error:', err);
+    res.status(500).json({ error: 'Failed to fetch donations' });
   }
 });
 

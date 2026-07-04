@@ -6,7 +6,6 @@ export function extractKeywords(text = '') {
     .filter(w => w.length > 2)
 }
 
-// Used for claim verification — compares claimant's answers against the item's real data.
 export function computeClaimMatchScore(item, claim) {
   let score = 0
   let weighted = 0
@@ -40,7 +39,6 @@ export function computeClaimMatchScore(item, claim) {
   return Math.min(100, Math.round((score / weighted) * 100))
 }
 
-// Used for lost/found item matching — same logic your DataContext already runs client-side.
 export function computeItemMatchScore(newItem, existingItem) {
   let score = 0
   const sharedKeywords = []
@@ -56,19 +54,12 @@ export function computeItemMatchScore(newItem, existingItem) {
 
   if (sameCategory) {
     if (!hasSubcategories) {
-      // Categories with no subcategories at all (documents, keys, etc.)
-      // — category match alone is meaningful here
       score += 40
     } else if (subCategoryMatch) {
-      // Same category AND same specific subcategory (e.g. both "Laptop")
       score += 40
     } else if (isVagueA || isVagueB) {
-      // One or both marked "Other" — too vague to auto-match, small nudge only,
-      // real signal has to come from keyword overlap below
       score += 10
     } else {
-      // Same broad category but different subcategory (calculator vs laptop)
-      // — not the same kind of item, no bonus
       score += 0
     }
   }
