@@ -261,6 +261,9 @@ app.post('/api/claims', async (req, res) => {
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
+    if (item.resolved) {
+  return res.status(409).json({ error: 'This item has already been claimed and resolved' });
+}
 
     // Rate-limit: max 3 attempts per email per item
     const attemptCount = await claimsCollection.countDocuments({ itemId, claimantEmail: claim.email });
@@ -282,6 +285,16 @@ app.post('/api/claims', async (req, res) => {
     });
 
     if (verified) {
+      await itemsCollection.updateOne(
+  { _id: new ObjectId(itemId) },
+  {
+    $set: {
+      resolved: true,
+      resolvedAt: new Date(),
+      resolvedBy: { name: claim.name, email: claim.email },
+    },
+  }
+);
       const posterEmail = item.contact || item.contactEmail;
       if (posterEmail && posterEmail.includes('@')) {
         await sendMail({
@@ -317,7 +330,35 @@ app.get('/', (req, res) => {
 app.get('/test', (req, res) => {
   res.send('Test route works');
 });
+// ==================== Mark Item as Resolved (self-report by owner) ====================
+app.patch('/api/items/:id/resolve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { requesterEmail } = req.body;
 
+    const { itemsCollection } = await getCollections();
+    const item = await itemsCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Only the original poster (matched by contact email) can self-resolve their own item
+    if (!requesterEmail || (item.contact || '').toLowerCase() !== requesterEmail.toLowerCase()) {
+      return res.status(403).json({ error: 'Only the original poster can mark this item as resolved' });
+    }
+
+    await itemsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { resolved: true, resolvedAt: new Date(), resolvedBy: 'owner-self-report' } }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /api/items/:id/resolve error:', err);
+    res.status(500).json({ error: 'Failed to mark item as resolved' });
+  }
+});
 // ==================== Items Routes ====================
 app.post('/items', async (req, res) => {
   try {
